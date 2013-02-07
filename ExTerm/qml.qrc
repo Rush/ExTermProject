@@ -4,5 +4,7 @@
         <file>qml/ExTerm/ScreenItem.qml</file>
         <file>qml/ExTerm/TextSegment.qml</file>
         <file>qml/ExTerm/LineItem.qml</file>
+        <file>qml/ExTerm/CursorItem.qml</file>
+        <file>qml/ExTerm/HtmlItem.qml</file>
     </qresource>
 </RCC>

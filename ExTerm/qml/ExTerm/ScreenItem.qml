@@ -8,11 +8,6 @@ Rectangle {
     property real fontWidth: parent.charWidth
     property real fontHeight: parent.lineHeight
 
-    property real cursorX
-    property real cursorY
-    property bool cursorVisible
-    property bool cursorBlinking
-
     Component.onCompleted: console.log("test" + parent);
     anchors.fill: parent
 
@@ -26,24 +21,8 @@ Rectangle {
            screenItem.parent.onKeyPressed(event.text, event.key, event.modifiers);
             //terminal.screen.sendKey(event.text, event.key, event.modifiers);
         }
-    }
-
-    Rectangle {
-        id: cursor
-        width: screenItem.fontWidth
-        height: screenItem.fontHeight
-        x: parent.cursorX
-        y: parent.cursorY
-        color: "grey"
-        property bool blink
-        visible: cursorVisible && (!cursorBlinking || blink)
-        SequentialAnimation on visible {
-            running: cursorBlinking
-            loops: Animation.Infinite
-            PropertyAction { target: cursor; property: "blink"; value: true }
-            PauseAnimation { duration: 500 }
-            PropertyAction { target: cursor; property: "blink"; value: false }
-            PauseAnimation { duration: 500 }
+        onFocusChanged: {
+            focus = true;
         }
     }
 

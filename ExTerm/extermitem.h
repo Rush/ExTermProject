@@ -20,8 +20,8 @@ class ExTermItem : public QQuickItem
     Q_PROPERTY(QFont font READ font WRITE setFont NOTIFY fontChanged)
     Q_PROPERTY(qreal charWidth READ charWidth NOTIFY charWidthChanged)
     Q_PROPERTY(qreal lineHeight READ lineHeight NOTIFY lineHeightChanged)
-    Q_PROPERTY(int height READ height WRITE setHeight)
-    Q_PROPERTY(int width READ width WRITE setWidth)
+//    Q_PROPERTY(int height READ height WRITE setHeight)
+//    Q_PROPERTY(int width READ width WRITE setWidth)
 //    Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY screenTitleChanged)
 //    Q_PROPERTY(bool cursorVisible READ cursorVisible NOTIFY cursorVisibleChanged)
 //    Q_PROPERTY(bool cursorBlinking READ cursorBlinking NOTIFY cursorBlinkingChanged)
@@ -42,19 +42,24 @@ class ExTermItem : public QQuickItem
     bool scheduleFullRedraw = false;
     QSet<quint64> changedLines;
 
+    QMap<quint64, QQuickItem*> htmlItems;
+    QMap<QString, quint64> objectId2Line;
+
     void initializeView();
     void deinitializeView();
 
-    QQmlComponent* textSegmentComponent;
-    QQmlComponent* lineItemComponent;
+    QQmlComponent* htmlItemComponent = NULL;
+    QQmlComponent* textSegmentComponent = NULL;
+    QQmlComponent* lineItemComponent = NULL;
 
-    QQuickItem* screenItem;
+    QQuickItem* screenItem = NULL;
+    QQuickItem* cursorItem = NULL;
 
     QPointF mapCursorToPosition(const QPoint& cursor);
 
     QSet<QQuickItem*> spareLineItems;
     QQuickItem* createLineItem();
-    void deleteLineItem(QQuickItem* lineItem);
+    void deleteLineItem(QQuickItem* lineItem, quint64 id);
 
     QSet<QQuickItem*> spareTextSegments;
     QQuickItem* createTextSegment(QQuickItem* lineItem);
@@ -69,7 +74,7 @@ public:
     qreal charWidth() const;
     void setFont(const QFont& font);
 
-    QObject* renderLine(int offset, const ScreenLine& line);
+    QObject* renderLine(qreal offset, const ScreenLine& line);
     void renderAll();
 
     void itemChange(ItemChange, const ItemChangeData &);
@@ -83,6 +88,8 @@ private slots:
     void onLineChanged(int idx);
     void onCursorChanged(const QPoint& cursor);
     void onLineFeed();
+
+    void createHtmlItem(const QString& objectId, int rows, const QString& data);
 
 signals:
     void fontChanged(QFont);

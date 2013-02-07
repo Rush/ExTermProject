@@ -22,6 +22,9 @@ public:
 
 signals:
     void cursorKeyModeChanged(bool state);
+
+    void htmlBlock(const QString& objectId, int rows, const QString& data);
+    void jsBlock(const QString& targetObjectId, const QString& data);
 public slots:
     void onData(const QByteArray& data);
 
@@ -39,11 +42,13 @@ private:
         ChangeWindowAndIconName,
         ChangeIconTitle,
         ChangeWindowTitle,
+        ExTermBlock,
         Other, // TODO handle all cases
         None
     };
     DecodeState decodeState;
     DecodeOSCState decodeOscState;
+    QString oscData;
 
     QString currentData;
     int currentTokenStart;

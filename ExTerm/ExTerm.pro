@@ -77,3 +77,18 @@ OTHER_FILES += \
 
 HEADERS += \
     controlchars.h
+
+OTHER_FILES += \
+    qml/ExTerm/WebItem.qml
+
+OTHER_FILES += \
+    qml/ExTerm/CursorItem.qml
+
+OTHER_FILES += \
+    qml/ExTerm/HtmlItem.qml
+
+RESOURCES += \
+    html.qrc
+
+OTHER_FILES += \
+    qml/ExTerm/TopItem.qml

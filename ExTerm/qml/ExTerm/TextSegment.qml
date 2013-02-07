@@ -6,12 +6,14 @@ Rectangle {
     property color backgroundColor
     property font font
 
+    property bool doubleHeight
+    property bool doubleHeightBottom
+
     Scale { id: scaleId; origin.x: 0; origin.y: 0; xScale: .5}
 
-    y: 0
+    y: doubleHeightBottom ? -height/2 : 0
     width: textItem.paintedWidth
     height: textItem.paintedHeight
-
     color: backgroundColor
 
     Text {
@@ -25,20 +27,5 @@ Rectangle {
         //renderType: Text.NativeRendering
     }
 
-    function setDoubleHeightTop() {
-       textItem.transform = scaleId;
-        textItem.font.pointSize *= 2;
-       clip = true;
-    }
-    function setDoubleHeightBottom() {
-        textItem.font.pointSize *= 2;
-        textItem.y -= height;
-        textItem.transform = scaleId;
-        clip = true;
-    }
-    function setNormalHeight() {
-        textItem.transform = null;
-        clip = false;
-    }
-
+    transform: doubleHeight ? scaleId : null
 }
