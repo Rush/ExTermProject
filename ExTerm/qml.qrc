@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/ExTerm/main.qml</file>
+        <file>qml/ExTerm/ScreenItem.qml</file>
+        <file>qml/ExTerm/TextSegment.qml</file>
+        <file>qml/ExTerm/LineItem.qml</file>
+    </qresource>
+</RCC>
