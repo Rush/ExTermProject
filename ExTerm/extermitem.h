@@ -91,6 +91,8 @@ private slots:
 
     void createHtmlItem(const QString& objectId, int rows, const QString& data);
 
+    void onDiscardedLine(quint64 id);
+
 signals:
     void fontChanged(QFont);
     void lineHeightChanged(qreal);

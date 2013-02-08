@@ -306,6 +306,7 @@ signals:
 
     void screenChanged();
     void lineChanged(int idx);
+    void discardedLine(quint64 id);
 
     void onLineFeed();
 public slots:

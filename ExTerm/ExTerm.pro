@@ -3,7 +3,7 @@ folder_01.source = qml/ExTerm
 folder_01.target = qml
 DEPLOYMENTFOLDERS = folder_01
 
-QT += gui quick webkit webkitwidgets
+QT += gui quick webkit webkitwidgets concurrent
 
 # Additional import path used to resolve QML modules in Creator's code model
 QML_IMPORT_PATH =
@@ -92,3 +92,9 @@ RESOURCES += \
 
 OTHER_FILES += \
     qml/ExTerm/TopItem.qml
+
+HEADERS += \
+    extermio.h
+
+SOURCES += \
+    extermio.cpp

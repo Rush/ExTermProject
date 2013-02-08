@@ -179,6 +179,8 @@ void ScreenModel::lineFeed(bool lineWrapped)
     //qDebug() << "Line feed" << cursor();
     if(m_cursor.y() == 0) {
         if(lines.size() == LINE_LIMIT) {
+
+            emit discardedLine(lines.last().id());
             lines.removeLast();
             discardedLines++;
         }

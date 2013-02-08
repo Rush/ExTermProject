@@ -89,16 +89,6 @@ void ExTermItem::deleteLineItem(QQuickItem* lineItem, quint64 id)
 {
     lineItem->setVisible(false);
 
-    int idx = model.getLineIdxById(id);
-    if(idx == -1) {
-        if(htmlItems.contains(id)) {
-            QQuickItem* htmlItem = htmlItems[id];
-            htmlItem->setParentItem(NULL);
-            objectId2Line.remove(htmlItem->objectName());
-            htmlItem->deleteLater();
-        }
-    }
-
 
     for(auto child: lineItem->childItems()) {
 //        //child->deleteLater();
@@ -135,12 +125,13 @@ void ExTermItem::deleteTextSegment(QQuickItem *textSegment)
 
 void ExTermItem::renderAll()
 {
-    if(!lineItemComponent)
-        return;
-    if(!lineItemComponent->isReady())
-        return;
-
     int lines = height() / lineHeight();// + 1;
+
+    for(auto i = htmlItems.begin();i != htmlItems.end();++i) {
+        if(model.getLineIdxById(i.key()) >= lines)
+            i.value()->setVisible(false);
+    }
+
     for(auto i = renderedLines.begin();i != renderedLines.end();) {
         int idx = model.getLineIdxById(i.key());
 
@@ -192,6 +183,7 @@ void ExTermItem::setFont(const QFont& font)
     emit lineHeightChanged(lineHeight());
     emit charWidthChanged(charWidth());
     emit fontChanged(font);
+    qDebug() << "Line height is" << lineHeight();
 }
 
 QObject* ExTermItem::renderLine(qreal offset, const ScreenLine &line)
@@ -308,91 +300,129 @@ void ExTermItem::initializeView()
 {
     engine = qmlEngine(this);
 
-    auto screenComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/ScreenItem.qml"));
-    auto cursorItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/CursorItem.qml"));
-    lineItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/LineItem.qml"));
-    textSegmentComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/TextSegment.qml"));
-    htmlItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/HtmlItem.qml"));
-//    auto topItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/TopItem.qml"));
+    auto cursorItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/CursorItem.qml"), QQmlComponent::Asynchronous);
+    lineItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/LineItem.qml"), QQmlComponent::Asynchronous);
+    textSegmentComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/TextSegment.qml"), QQmlComponent::Asynchronous);
+    htmlItemComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/HtmlItem.qml"), QQmlComponent::Asynchronous);
+    auto screenComponent = new QQmlComponent(engine,QUrl("qrc:/qml/ExTerm/ScreenItem.qml"), QQmlComponent::PreferSynchronous);
 
-
-//    auto topItem = qobject_cast<QQuickItem*>(topItemComponent->beginCreate(qmlContext(this)));
-//    topItem->setParentItem(this);
-//    topItemComponent->completeCreate();
-
-    screenItem = qobject_cast<QQuickItem*>(screenComponent->beginCreate(qmlContext(this)));
-    screenItem->setParentItem(this);
-    screenComponent->completeCreate();
-
-    cursorItem = qobject_cast<QQuickItem*>(cursorItemComponent->beginCreate(qmlContext(this)));
-    cursorItem->setParentItem(this);
-    cursorItemComponent->completeCreate();
-
-    fontMetrics = QFontMetricsF(this->font());
-
-    connect(&model, &ScreenModel::lineChanged,
-            this, &ExTermItem::onLineChanged);
-
-    connect(&model, &ScreenModel::cursorChanged,
-            this, &ExTermItem::onCursorChanged);
-
-    connect(&model, &ScreenModel::onLineFeed,
-            this, &ExTermItem::onLineFeed);
-
-    connect(&model, &ScreenModel::cursorBlinkingChanged, [=](bool cursorBlinking) {
-        screenItem->setProperty("cursorBlinking", cursorBlinking);
-    });
-    connect(&model, &ScreenModel::cursorVisibleChanged, [=](bool cursorVisible) {
-        screenItem->setProperty("cursorVisible", cursorVisible);
-    });
-
-
-    auto onSizeChanged = [=]() {
-        qDebug() << "Size changed height" << lineHeight();
-        model.setSize(QSize(width() / charWidth(), height() / lineHeight() /*+1*/));
-
-        renderTimer.start(30);
-        scheduleFullRedraw = true;
-//        if(engine)
-//            renderAll();
-        onCursorChanged(model.cursor());
-    };
-    onSizeChanged();
-    connect(this, &QQuickItem::heightChanged, onSizeChanged);
-    connect(this, &QQuickItem::widthChanged, onSizeChanged);
-    connect(this, &ExTermItem::fontChanged, onSizeChanged);
-
-
-    renderTimer.setSingleShot(true);
-    connect(&renderTimer, &QTimer::timeout, [&]() {
-
-        {
-          auto pos = mapCursorToPosition(model.cursor());
-
-          cursorItem->setX(pos.x());
-          cursorItem->setY(pos.y());
-        }
-
-        if(scheduleFullRedraw) {
-            renderAll();
-            //scheduleFullRedraw = false;
+    auto finishInitialize = [=]() {
+        if(screenComponent->isError()) {
+            qDebug() << screenComponent->errorString();
             return;
         }
-
-        for(auto i = changedLines.begin();i != changedLines.end();) {
-            quint64 id = *i;
-            int idx = model.getLineIdxById(id);
-            if(idx < 0)
-                continue;
-            auto pos = mapCursorToPosition(QPoint(0, idx));
-            ++i;
-            renderLine(pos.y(), model[idx]);
+        if(cursorItemComponent->isError()) {
+           qDebug() << cursorItemComponent->errorString();
+           return;
         }
-        changedLines.clear();
-    });
+        if(lineItemComponent->isError()) {
+           qDebug() <<lineItemComponent->errorString();
+           return;
+        }
+        if(textSegmentComponent->isError()) {
+           qDebug() << textSegmentComponent->errorString();
+           return;
+        }
+        if(htmlItemComponent->isError()) {
+           qDebug() << htmlItemComponent->errorString();
+           return;
+        }
+        qDebug() << "All components without errors";
 
-    screenItem->setProperty("cursorVisible", true);
-    screenItem->setProperty("cursorBlinking", false);
+        screenItem = qobject_cast<QQuickItem*>(screenComponent->beginCreate(qmlContext(this)));
+        screenItem->setParentItem(this);
+        screenComponent->completeCreate();
+
+        cursorItem = qobject_cast<QQuickItem*>(cursorItemComponent->beginCreate(qmlContext(this)));
+        cursorItem->setParentItem(this);
+        cursorItemComponent->completeCreate();
+
+        fontMetrics = QFontMetricsF(this->font());
+
+        connect(&model, &ScreenModel::lineChanged,
+                this, &ExTermItem::onLineChanged);
+
+        connect(&model, &ScreenModel::cursorChanged,
+                this, &ExTermItem::onCursorChanged);
+
+        connect(&model, &ScreenModel::onLineFeed,
+                this, &ExTermItem::onLineFeed);
+
+        connect(&model, &ScreenModel::discardedLine,
+                this, &ExTermItem::onDiscardedLine);
+
+        connect(&model, &ScreenModel::cursorBlinkingChanged, [=](bool cursorBlinking) {
+            screenItem->setProperty("cursorBlinking", cursorBlinking);
+        });
+        connect(&model, &ScreenModel::cursorVisibleChanged, [=](bool cursorVisible) {
+            screenItem->setProperty("cursorVisible", cursorVisible);
+        });
+
+
+        auto onSizeChanged = [=]() {
+            qDebug() << "Size changed height" << lineHeight();
+            model.setSize(QSize(width() / charWidth(), height() / lineHeight() /*+1*/));
+
+            renderTimer.start(30);
+            scheduleFullRedraw = true;
+            onCursorChanged(model.cursor());
+        };
+        onSizeChanged();
+        connect(this, &QQuickItem::heightChanged, onSizeChanged);
+        connect(this, &QQuickItem::widthChanged, onSizeChanged);
+        connect(this, &ExTermItem::fontChanged, onSizeChanged);
+
+
+        renderTimer.setSingleShot(true);
+        connect(&renderTimer, &QTimer::timeout, [&]() {
+
+            {
+                auto pos = mapCursorToPosition(model.cursor());
+
+                cursorItem->setX(pos.x());
+                cursorItem->setY(pos.y());
+            }
+
+            if(scheduleFullRedraw) {
+                renderAll();
+                //scheduleFullRedraw = false;
+                return;
+            }
+
+            for(auto i = changedLines.begin();i != changedLines.end();) {
+                quint64 id = *i;
+                int idx = model.getLineIdxById(id);
+                if(idx < 0)
+                    continue;
+                auto pos = mapCursorToPosition(QPoint(0, idx));
+                ++i;
+                renderLine(pos.y(), model[idx]);
+            }
+            changedLines.clear();
+        });
+
+        screenItem->setProperty("cursorVisible", true);
+        screenItem->setProperty("cursorBlinking", false);
+    };
+
+    int readyCount = 0;
+    auto onComponentChanged = [=]() {
+
+        if(!screenComponent->isLoading() &&
+                !cursorItemComponent->isLoading() &&
+                !lineItemComponent->isLoading() &&
+                !textSegmentComponent->isLoading() &&
+                !htmlItemComponent->isLoading()) {
+
+            qDebug() << "All components finished";
+            finishInitialize();
+        }
+    };
+    connect(screenComponent, &QQmlComponent::statusChanged, onComponentChanged);
+    connect(cursorItemComponent, &QQmlComponent::statusChanged, onComponentChanged);
+    connect(lineItemComponent, &QQmlComponent::statusChanged, onComponentChanged);
+    connect(textSegmentComponent, &QQmlComponent::statusChanged, onComponentChanged);
+    connect(htmlItemComponent, &QQmlComponent::statusChanged, onComponentChanged);
 }
 
 void ExTermItem::deinitializeView()
@@ -408,6 +438,15 @@ void ExTermItem::clearRenderedCache()
         deleteLineItem(i.value(), i.key());
     renderedLines.clear();
     changedLines.clear();
+}
+
+void ExTermItem::onDiscardedLine(quint64 id)
+{
+    if(htmlItems.contains(id)) {
+        QQuickItem* htmlItem = htmlItems[id];
+        objectId2Line.remove(htmlItem->objectName());
+        htmlItem->deleteLater();
+    }
 }
 
 QPointF ExTermItem::mapCursorToPosition(const QPoint& cursor)

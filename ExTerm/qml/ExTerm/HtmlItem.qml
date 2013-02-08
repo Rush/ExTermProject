@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import QtWebKit 3.0
 import QtWebKit.experimental 1.0
+import ExTermIO 1.0
 
 WebView {
     id: webView
@@ -15,11 +16,25 @@ WebView {
 
     experimental.preferredMinimumContentsWidth: 1
 
+    ExTermIO { id: io }
+
     experimental {
         urlSchemeDelegates: [
             UrlSchemeDelegate {
+                scheme: "local"
+                onReceivedRequest: {
+                    console.log("FILE request");
+                    io.getUrl(request.url, function(err, value, contentType) {
+                        reply.data = value;
+                        reply.contentType = contentType;
+                        reply.send();
+                    });
+                }
+            },
+            UrlSchemeDelegate {
                 scheme: "http"
                 onReceivedRequest: {
+                    console.log("HTTP request");
                     reply.data = ""
                     reply.send()
                 }
@@ -27,13 +42,7 @@ WebView {
             UrlSchemeDelegate {
                 scheme: "https"
                 onReceivedRequest: {
-                    reply.data = ""
-                    reply.send()
-                }
-            },
-            UrlSchemeDelegate {
-                scheme: "file"
-                onReceivedRequest: {
+                    console.log("HTTPS request");
                     reply.data = ""
                     reply.send()
                 }
@@ -48,7 +57,12 @@ WebView {
         ]
     }
 
+    onLoadProgressChanged: {
+        console.log("loadProgress" + loadProgress);
+    }
+
     onLoadingChanged: {
+        console.log("Loading" + loading);
         if(!loading) {
             animateOpacity.start();
         }
@@ -60,14 +74,15 @@ WebView {
         properties: "opacity"
         from: 0
         to: 1.0
-        easing {type: Easing.InQuad}
-        duration: 100
+        easing {type: Easing.OutCubic}
+        duration: 500
     }
 
     property string html
     onHtmlChanged: loadHtml(html)
 
     Component.onCompleted: {
+        console.log("Completed");
         console.log(experimental.urlSchemeDelegates);
      //   console.log(experimental.preferences.caretBrowsingEnabled);
     }
